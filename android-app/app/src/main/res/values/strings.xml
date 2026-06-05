@@ -1,3 +1,28 @@
 <resources>
     <string name="app_name">TrailGuide</string>
+    <string name="auth_title">TrailGuide</string>
+    <string name="auth_subtitle">Logowanie i rejestracja przez backend lokalny.</string>
+    <string name="email_hint">Email</string>
+    <string name="password_hint">Hasło</string>
+    <string name="username_hint">Username dla rejestracji</string>
+    <string name="login_button">Login</string>
+    <string name="register_button">Register</string>
+    <string name="user_panel_title">Panel uzytkownika</string>
+    <string name="logout_button">Logout</string>
+    <string name="current_trip_menu_button">Aktualna trasa</string>
+    <string name="history_menu_button">Historia tras</string>
+    <string name="current_trip_title">Aktualna trasa</string>
+    <string name="current_trip_empty">Brak aktywnej trasy.</string>
+    <string name="gps_status_idle">GPS: nieaktywny.</string>
+    <string name="history_title">Historia tras</string>
+    <string name="trip_details_title">Szczegoly trasy</string>
+    <string name="trip_details_loading">Laduje szczegoly trasy...</string>
+    <string name="trip_title_hint">Tytul trasy</string>
+    <string name="trip_description_hint">Opis trasy</string>
+    <string name="start_trip_button">Start trip</string>
+    <string name="refresh_trips_button">Refresh</string>
+    <string name="finish_trip_button">Finish active trip</string>
+    <string name="back_button">Back</string>
+    <string name="trips_empty">Brak zaladowanych tras.</string>
+    <string name="status_ready">Gotowe. Backend emulatora: http://10.0.2.2:8080</string>
 </resources>
