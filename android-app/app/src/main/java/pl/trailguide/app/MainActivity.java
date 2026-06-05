@@ -1,11 +1,8 @@
 package pl.trailguide.app;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
-import android.location.Location;
 import android.os.Bundle;
-import android.os.Looper;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -20,12 +17,6 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationCallback;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationResult;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.Priority;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -47,7 +38,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import pl.trailguide.app.api.AddLocationPointRequest;
 import pl.trailguide.app.api.ApiClient;
 import pl.trailguide.app.api.AuthResponse;
 import pl.trailguide.app.api.FinishTripRequest;
@@ -59,14 +49,12 @@ import pl.trailguide.app.api.TrailGuideApi;
 import pl.trailguide.app.api.TripResponse;
 import pl.trailguide.app.api.UserMeResponse;
 import pl.trailguide.app.auth.TokenStorage;
+import pl.trailguide.app.tracking.LocationTrackingService;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
-    private static final long LOCATION_INTERVAL_MILLIS = 10_000L;
-    private static final long LOCATION_MIN_INTERVAL_MILLIS = 5_000L;
-
     private TextInputEditText emailInput;
     private TextInputEditText passwordInput;
     private TextInputEditText usernameInput;
@@ -103,12 +91,9 @@ public class MainActivity extends AppCompatActivity {
 
     private TokenStorage tokenStorage;
     private TrailGuideApi api;
-    private FusedLocationProviderClient fusedLocationClient;
-    private LocationCallback locationCallback;
     private ActivityResultLauncher<String> locationPermissionLauncher;
     private Long activeTripId;
     private boolean trackingLocation;
-    private int sentLocationPoints;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -123,7 +108,6 @@ public class MainActivity extends AppCompatActivity {
         });
 
         bindViews();
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         setupLocationTracking();
 
         try {
@@ -158,7 +142,6 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        stopLocationTracking();
         super.onDestroy();
     }
 
@@ -223,24 +206,11 @@ public class MainActivity extends AppCompatActivity {
                 new ActivityResultContracts.RequestPermission(),
                 granted -> {
                     if (granted) {
-                        startLocationUpdates();
+                        startLocationTracking();
                     } else {
                         setGpsStatus("GPS: brak zgody lokalizacji. Trasa dziala, ale bez punktow.");
                     }
                 });
-
-        locationCallback = new LocationCallback() {
-            @Override
-            public void onLocationResult(LocationResult locationResult) {
-                if (locationResult == null || activeTripId == null) {
-                    return;
-                }
-                Location location = locationResult.getLastLocation();
-                if (location != null) {
-                    sendLocationPoint(location);
-                }
-            }
-        };
     }
 
     private void login() {
@@ -372,7 +342,6 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 activeTripId = response.body().getId();
-                sentLocationPoints = 0;
                 currentTripText.setText(formatTrip(response.body()));
                 tripTitleInput.setText("");
                 tripDescriptionInput.setText("");
@@ -399,67 +368,15 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        startLocationUpdates();
-    }
-
-    @SuppressLint("MissingPermission")
-    private void startLocationUpdates() {
-        if (activeTripId == null || trackingLocation || !hasLocationPermission()) {
-            return;
-        }
-
-        LocationRequest request = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, LOCATION_INTERVAL_MILLIS)
-                .setMinUpdateIntervalMillis(LOCATION_MIN_INTERVAL_MILLIS)
-                .build();
-
-        fusedLocationClient.requestLocationUpdates(request, locationCallback, Looper.getMainLooper())
-                .addOnSuccessListener(unused -> {
-                    trackingLocation = true;
-                    setGpsStatus("GPS: wlaczony. Punkty beda wysylane co ok. 10 sekund.");
-                })
-                .addOnFailureListener(e -> setGpsStatus("GPS: nie udalo sie wlaczyc: " + e.getMessage()));
+        LocationTrackingService.start(this, activeTripId);
+        trackingLocation = true;
+        setGpsStatus("GPS: foreground service wlaczony. Punkty beda wysylane co ok. 10 sekund.");
     }
 
     private void stopLocationTracking() {
-        if (!trackingLocation) {
-            return;
-        }
-
-        fusedLocationClient.removeLocationUpdates(locationCallback);
+        LocationTrackingService.stop(this);
         trackingLocation = false;
         setGpsStatus("GPS: zatrzymany.");
-    }
-
-    private void sendLocationPoint(Location location) {
-        Long tripId = activeTripId;
-        if (tripId == null) {
-            return;
-        }
-
-        AddLocationPointRequest request = new AddLocationPointRequest(
-                BigDecimal.valueOf(location.getLatitude()),
-                BigDecimal.valueOf(location.getLongitude()),
-                location.hasAltitude() ? BigDecimal.valueOf(location.getAltitude()) : null,
-                location.hasAccuracy() ? BigDecimal.valueOf(location.getAccuracy()) : null,
-                Instant.ofEpochMilli(location.getTime() > 0 ? location.getTime() : System.currentTimeMillis()).toString());
-
-        api.addLocationPoint(tripId, request).enqueue(new Callback<LocationPointResponse>() {
-            @Override
-            public void onResponse(Call<LocationPointResponse> call, Response<LocationPointResponse> response) {
-                if (!response.isSuccessful()) {
-                    setGpsStatus("GPS: nie udalo sie wyslac punktu: HTTP " + response.code() + readError(response));
-                    return;
-                }
-
-                sentLocationPoints++;
-                setGpsStatus("GPS: wyslano punkt #" + sentLocationPoints + locationSummary(location));
-            }
-
-            @Override
-            public void onFailure(Call<LocationPointResponse> call, Throwable t) {
-                setGpsStatus("GPS: blad wysylki punktu: " + t.getMessage());
-            }
-        });
     }
 
     private void finishActiveTrip() {
@@ -481,7 +398,6 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 activeTripId = null;
-                sentLocationPoints = 0;
                 currentTripText.setText(R.string.current_trip_empty);
                 gpsStatusText.setText(R.string.gps_status_idle);
                 setTripDone("Trasa zakonczona. Dystans: " + response.body().getDistanceMeters() + " m");
@@ -946,13 +862,4 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private String locationSummary(Location location) {
-        StringBuilder builder = new StringBuilder()
-                .append("\nLat: ").append(location.getLatitude())
-                .append("\nLng: ").append(location.getLongitude());
-        if (location.hasAccuracy()) {
-            builder.append("\nAccuracy: ").append(location.getAccuracy()).append(" m");
-        }
-        return builder.toString();
-    }
 }
