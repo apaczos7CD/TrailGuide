@@ -35,10 +35,17 @@ services:
       TRAILGUIDE_ADMIN_PASSWORD: AdminPassword123!
       TRAILGUIDE_FIREBASE_ENABLED: ${TRAILGUIDE_FIREBASE_ENABLED:-false}
       TRAILGUIDE_FIREBASE_SERVICE_ACCOUNT_PATH: /run/secrets/firebase-service-account.json
+      SERVER_PORT: 8443
+      SERVER_SSL_ENABLED: true
+      SERVER_SSL_KEY_STORE: file:/certs/trailguide-dev.p12
+      SERVER_SSL_KEY_STORE_PASSWORD: ${SERVER_SSL_KEY_STORE_PASSWORD:?Set SERVER_SSL_KEY_STORE_PASSWORD in .env}
+      SERVER_SSL_KEY_STORE_TYPE: PKCS12
+      SERVER_SSL_KEY_ALIAS: trailguide
     volumes:
       - ${TRAILGUIDE_FIREBASE_SERVICE_ACCOUNT_FILE:-./firebase-service-account.json}:/run/secrets/firebase-service-account.json:ro
+      - ./certs:/certs:ro
     ports:
-      - "8080:8080"
+      - "8443:8443"
 
 volumes:
   trailguide-postgres-data:

@@ -10,3 +10,7 @@ firebase-service-account.json
 ### Firebase Android config ###
 android-app/app/google-services.json
 **/google-services.json
+
+### TLS private material ###
+certs/*.key
+certs/*.p12

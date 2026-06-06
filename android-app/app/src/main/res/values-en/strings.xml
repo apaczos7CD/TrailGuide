@@ -36,7 +36,7 @@
     <string name="finish_trip_button">Finish active trip</string>
     <string name="back_button">Back</string>
     <string name="trips_empty">No trips loaded.</string>
-    <string name="status_ready">Ready. Emulator backend: http://10.0.2.2:8080</string>
+    <string name="status_ready">Ready. Emulator backend: https://10.0.2.2:8443</string>
     <string name="history_choose_trip">Choose a trip to view details.</string>
     <string name="history_empty">No historical trips.</string>
     <string name="trip_status_active">active</string>

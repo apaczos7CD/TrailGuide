@@ -38,12 +38,28 @@ $adminResponse = Invoke-RestMethod -Method Post http://localhost:8080/api/auth/l
   -ContentType "application/json" `
   -Body '{"email":"admin@example.com","password":"AdminPassword123!"}'
 
+curl.exe -k -X POST "https://localhost:8443/api/auth/login" -H "Content-Type: application/json" -d '{"email":"admin@example.com","password":"AdminPassword123!"}'
+
+$adminResponse = Invoke-RestMethod -SkipCertificateCheck -Method Post https://localhost:8443/api/auth/login `
+  -ContentType "application/json" `
+  -Body '{"email":"admin@example.com","password":"AdminPassword123!"}'
+
 $adminToken = $adminResponse.token
 
 Invoke-RestMethod -Method Get http://localhost:8080/api/admin/users `
   -Headers @{ Authorization = "Bearer $adminToken" }
 
-  Invoke-RestMethod -Method Post http://localhost:8080/api/notifications `
+Invoke-RestMethod -SkipCertificateCheck -Method Get https://localhost:8443/api/admin/users `
+  -Headers @{ Authorization = "Bearer $adminToken" }
+
+Invoke-RestMethod -Method Post http://localhost:8080/api/notifications `
   -Headers @{ Authorization = "Bearer $adminToken" } `
   -ContentType "application/json" `
   -Body '{"title":"Uwaga na trasie","body":"Szlak jest dzisiaj częściowo zamknięty."}'
+
+
+Invoke-RestMethod -SkipCertificateCheck -Method Post https://localhost:8443/api/notifications `
+  -Headers @{ Authorization = "Bearer $adminToken" } `
+  -ContentType "application/json" `
+  -Body '{"title":"Uwaga na trasie","body":"Szlak jest dzisiaj częściowo zamknięty."}'
+
