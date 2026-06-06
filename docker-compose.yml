@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: trailguide-postgres
+    environment:
+      POSTGRES_DB: trailguide
+      POSTGRES_USER: trailguide
+      POSTGRES_PASSWORD: trailguide
+    ports:
+      - "5433:5432"
+    volumes:
+      - trailguide-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trailguide -d trailguide"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./trailguide-backend
+    container_name: trailguide-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/trailguide
+      SPRING_DATASOURCE_USERNAME: trailguide
+      SPRING_DATASOURCE_PASSWORD: trailguide
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      TRAILGUIDE_JWT_SECRET: docker-development-secret-change-this-development-secret
+      TRAILGUIDE_JWT_EXPIRATION_MINUTES: 1440
+      TRAILGUIDE_ADMIN_USERNAME: admin
+      TRAILGUIDE_ADMIN_EMAIL: admin@example.com
+      TRAILGUIDE_ADMIN_PASSWORD: AdminPassword123!
+      TRAILGUIDE_FIREBASE_ENABLED: ${TRAILGUIDE_FIREBASE_ENABLED:-false}
+      TRAILGUIDE_FIREBASE_SERVICE_ACCOUNT_PATH: /run/secrets/firebase-service-account.json
+    volumes:
+      - ${TRAILGUIDE_FIREBASE_SERVICE_ACCOUNT_FILE:-./firebase-service-account.json}:/run/secrets/firebase-service-account.json:ro
+    ports:
+      - "8080:8080"
+
+volumes:
+  trailguide-postgres-data:

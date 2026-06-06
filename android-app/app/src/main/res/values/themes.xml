@@ -1,8 +1,20 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
     <style name="Base.Theme.TrailGuide" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="colorPrimary">@color/trail_primary</item>
+        <item name="colorOnPrimary">@color/trail_on_primary</item>
+        <item name="colorPrimaryContainer">@color/trail_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/trail_on_primary_container</item>
+        <item name="colorSecondary">@color/trail_secondary</item>
+        <item name="colorOnSecondary">@color/trail_on_secondary</item>
+        <item name="android:colorBackground">@color/trail_background</item>
+        <item name="colorSurface">@color/trail_surface</item>
+        <item name="colorOnSurface">@color/trail_on_surface</item>
+        <item name="colorSurfaceVariant">@color/trail_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/trail_on_surface_variant</item>
+        <item name="colorOutline">@color/trail_outline</item>
+        <item name="android:navigationBarColor">@color/trail_background</item>
+        <item name="android:statusBarColor">@color/trail_background</item>
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 
     <style name="Theme.TrailGuide" parent="Base.Theme.TrailGuide" />

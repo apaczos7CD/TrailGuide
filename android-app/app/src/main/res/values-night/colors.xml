@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="trail_primary">#8BD6AD</color>
+    <color name="trail_on_primary">#07351F</color>
+    <color name="trail_primary_container">#16472E</color>
+    <color name="trail_on_primary_container">#D7F2E0</color>
+    <color name="trail_secondary">#B9C8BD</color>
+    <color name="trail_on_secondary">#25352B</color>
+    <color name="trail_background">#101511</color>
+    <color name="trail_on_background">#E6F0EA</color>
+    <color name="trail_surface">#151D18</color>
+    <color name="trail_on_surface">#E6F0EA</color>
+    <color name="trail_surface_variant">#233128</color>
+    <color name="trail_on_surface_variant">#D5E4DA</color>
+    <color name="trail_outline">#8B9B92</color>
+    <color name="panel_strong">#D7F2E0</color>
+    <color name="on_panel_strong">#07140D</color>
+    <color name="panel_soft">#1A261F</color>
+    <color name="panel_gps">#1C2A22</color>
+    <color name="on_panel_soft">#E6F0EA</color>
+</resources>

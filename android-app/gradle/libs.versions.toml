@@ -12,6 +12,8 @@ okhttp = "4.12.0"
 securityCrypto = "1.1.0-alpha06"
 playServicesLocation = "21.3.0"
 osmdroid = "6.1.20"
+firebaseBom = "34.14.0"
+googleServices = "4.4.4"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -27,6 +29,9 @@ okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor",
 security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
 osmdroid-android = { group = "org.osmdroid", name = "osmdroid-android", version.ref = "osmdroid" }
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }

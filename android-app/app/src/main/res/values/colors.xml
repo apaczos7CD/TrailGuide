@@ -2,4 +2,22 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="trail_primary">#2F6B4F</color>
+    <color name="trail_on_primary">#FFFFFFFF</color>
+    <color name="trail_primary_container">#D8F0E0</color>
+    <color name="trail_on_primary_container">#0F2D1F</color>
+    <color name="trail_secondary">#5D6E62</color>
+    <color name="trail_on_secondary">#FFFFFFFF</color>
+    <color name="trail_background">#FAFCF8</color>
+    <color name="trail_on_background">#101915</color>
+    <color name="trail_surface">#FAFCF8</color>
+    <color name="trail_on_surface">#101915</color>
+    <color name="trail_surface_variant">#E7EEE8</color>
+    <color name="trail_on_surface_variant">#24342D</color>
+    <color name="trail_outline">#708078</color>
+    <color name="panel_strong">#101E1A</color>
+    <color name="on_panel_strong">#FFFFFFFF</color>
+    <color name="panel_soft">#F2F5F1</color>
+    <color name="panel_gps">#E7EFEA</color>
+    <color name="on_panel_soft">#101E1A</color>
 </resources>

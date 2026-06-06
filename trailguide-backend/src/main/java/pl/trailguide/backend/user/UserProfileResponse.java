@@ -2,6 +2,7 @@ package pl.trailguide.backend.user;
 
 public record UserProfileResponse(
 		String firstName,
+		String city,
 		Integer height,
 		Integer weight,
 		String hikingLevel) {
@@ -10,6 +11,7 @@ public record UserProfileResponse(
 		String level = profile.getHikingLevel() == null ? null : profile.getHikingLevel().name();
 		return new UserProfileResponse(
 				profile.getFirstName(),
+				profile.getCity(),
 				profile.getHeight(),
 				profile.getWeight(),
 				level);

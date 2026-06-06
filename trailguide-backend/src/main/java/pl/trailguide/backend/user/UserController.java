@@ -37,7 +37,7 @@ public class UserController {
 		AppUser user = currentUser(principal);
 		UserProfile profile = userProfileRepository.findByUser(user)
 				.orElseGet(() -> new UserProfile(user));
-		profile.update(request.firstName(), request.height(), request.weight(), request.hikingLevel());
+		profile.update(request.firstName(), request.city(), request.height(), request.weight(), request.hikingLevel());
 		UserProfile savedProfile = userProfileRepository.save(profile);
 		return UserMeResponse.from(user, savedProfile);
 	}

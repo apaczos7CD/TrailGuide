@@ -2,6 +2,7 @@ package pl.trailguide.app;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
@@ -12,11 +13,15 @@ import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
+import androidx.core.os.LocaleListCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -40,6 +45,8 @@ import java.util.Locale;
 
 import pl.trailguide.app.api.ApiClient;
 import pl.trailguide.app.api.AuthResponse;
+import pl.trailguide.app.api.FcmTokenRequest;
+import pl.trailguide.app.api.FcmTokenResponse;
 import pl.trailguide.app.api.FinishTripRequest;
 import pl.trailguide.app.api.LocationPointResponse;
 import pl.trailguide.app.api.LoginRequest;
@@ -47,8 +54,11 @@ import pl.trailguide.app.api.RegisterRequest;
 import pl.trailguide.app.api.StartTripRequest;
 import pl.trailguide.app.api.TrailGuideApi;
 import pl.trailguide.app.api.TripResponse;
+import pl.trailguide.app.api.UpdateUserProfileRequest;
 import pl.trailguide.app.api.UserMeResponse;
+import pl.trailguide.app.api.UserProfileResponse;
 import pl.trailguide.app.auth.TokenStorage;
+import pl.trailguide.app.notifications.NotificationHelper;
 import pl.trailguide.app.tracking.LocationTrackingService;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -60,27 +70,39 @@ public class MainActivity extends AppCompatActivity {
     private TextInputEditText usernameInput;
     private TextInputEditText tripTitleInput;
     private TextInputEditText tripDescriptionInput;
+    private TextInputEditText profileFirstNameInput;
+    private TextInputEditText profileCityInput;
+    private TextInputEditText profileHeightInput;
+    private TextInputEditText profileWeightInput;
 
     private View authPanel;
     private View homePanel;
+    private View profilePanel;
     private View currentTripPanel;
     private View historyPanel;
     private View tripDetailsPanel;
 
     private MaterialButton loginButton;
     private MaterialButton registerButton;
+    private MaterialButton polishLanguageButton;
+    private MaterialButton englishLanguageButton;
     private MaterialButton logoutButton;
     private MaterialButton currentTripMenuButton;
+    private MaterialButton profileMenuButton;
     private MaterialButton historyMenuButton;
     private MaterialButton startTripButton;
     private MaterialButton finishTripButton;
     private MaterialButton refreshCurrentTripButton;
     private MaterialButton refreshHistoryButton;
+    private MaterialButton refreshProfileButton;
+    private MaterialButton saveProfileButton;
+    private MaterialButton backFromProfileButton;
     private MaterialButton backFromCurrentButton;
     private MaterialButton backFromHistoryButton;
     private MaterialButton backFromDetailsButton;
 
     private TextView userSummaryText;
+    private TextView profileText;
     private TextView currentTripText;
     private TextView gpsStatusText;
     private TextView historyTripsText;
@@ -92,6 +114,8 @@ public class MainActivity extends AppCompatActivity {
     private TokenStorage tokenStorage;
     private TrailGuideApi api;
     private ActivityResultLauncher<String> locationPermissionLauncher;
+    private ActivityResultLauncher<String> notificationPermissionLauncher;
+    private UserMeResponse currentUser;
     private Long activeTripId;
     private boolean trackingLocation;
 
@@ -109,6 +133,7 @@ public class MainActivity extends AppCompatActivity {
 
         bindViews();
         setupLocationTracking();
+        setupNotifications();
 
         try {
             tokenStorage = new TokenStorage(this);
@@ -121,13 +146,20 @@ public class MainActivity extends AppCompatActivity {
 
         loginButton.setOnClickListener(v -> login());
         registerButton.setOnClickListener(v -> register());
+        polishLanguageButton.setOnClickListener(v -> setAppLanguage("pl"));
+        englishLanguageButton.setOnClickListener(v -> setAppLanguage("en"));
+        updateLanguageSelection();
         logoutButton.setOnClickListener(v -> logout());
         currentTripMenuButton.setOnClickListener(v -> openCurrentTrip());
+        profileMenuButton.setOnClickListener(v -> openProfile());
         historyMenuButton.setOnClickListener(v -> openHistory());
         startTripButton.setOnClickListener(v -> startTrip());
         finishTripButton.setOnClickListener(v -> finishActiveTrip());
         refreshCurrentTripButton.setOnClickListener(v -> loadCurrentTrip());
+        refreshProfileButton.setOnClickListener(v -> loadProfile());
+        saveProfileButton.setOnClickListener(v -> saveProfile());
         refreshHistoryButton.setOnClickListener(v -> loadHistory());
+        backFromProfileButton.setOnClickListener(v -> showHomePanel());
         backFromCurrentButton.setOnClickListener(v -> showHomePanel());
         backFromHistoryButton.setOnClickListener(v -> showHomePanel());
         backFromDetailsButton.setOnClickListener(v -> showHistoryPanel());
@@ -164,6 +196,7 @@ public class MainActivity extends AppCompatActivity {
     private void bindViews() {
         authPanel = findViewById(R.id.authPanel);
         homePanel = findViewById(R.id.homePanel);
+        profilePanel = findViewById(R.id.profilePanel);
         currentTripPanel = findViewById(R.id.currentTripPanel);
         historyPanel = findViewById(R.id.historyPanel);
         tripDetailsPanel = findViewById(R.id.tripDetailsPanel);
@@ -173,21 +206,32 @@ public class MainActivity extends AppCompatActivity {
         usernameInput = findViewById(R.id.usernameInput);
         tripTitleInput = findViewById(R.id.tripTitleInput);
         tripDescriptionInput = findViewById(R.id.tripDescriptionInput);
+        profileFirstNameInput = findViewById(R.id.profileFirstNameInput);
+        profileCityInput = findViewById(R.id.profileCityInput);
+        profileHeightInput = findViewById(R.id.profileHeightInput);
+        profileWeightInput = findViewById(R.id.profileWeightInput);
 
         loginButton = findViewById(R.id.loginButton);
         registerButton = findViewById(R.id.registerButton);
+        polishLanguageButton = findViewById(R.id.polishLanguageButton);
+        englishLanguageButton = findViewById(R.id.englishLanguageButton);
         logoutButton = findViewById(R.id.logoutButton);
         currentTripMenuButton = findViewById(R.id.currentTripMenuButton);
+        profileMenuButton = findViewById(R.id.profileMenuButton);
         historyMenuButton = findViewById(R.id.historyMenuButton);
         startTripButton = findViewById(R.id.startTripButton);
         finishTripButton = findViewById(R.id.finishTripButton);
         refreshCurrentTripButton = findViewById(R.id.refreshCurrentTripButton);
+        refreshProfileButton = findViewById(R.id.refreshProfileButton);
+        saveProfileButton = findViewById(R.id.saveProfileButton);
         refreshHistoryButton = findViewById(R.id.refreshHistoryButton);
+        backFromProfileButton = findViewById(R.id.backFromProfileButton);
         backFromCurrentButton = findViewById(R.id.backFromCurrentButton);
         backFromHistoryButton = findViewById(R.id.backFromHistoryButton);
         backFromDetailsButton = findViewById(R.id.backFromDetailsButton);
 
         userSummaryText = findViewById(R.id.userSummaryText);
+        profileText = findViewById(R.id.profileText);
         currentTripText = findViewById(R.id.currentTripText);
         gpsStatusText = findViewById(R.id.gpsStatusText);
         historyTripsText = findViewById(R.id.historyTripsText);
@@ -211,6 +255,37 @@ public class MainActivity extends AppCompatActivity {
                         setGpsStatus("GPS: brak zgody lokalizacji. Trasa dziala, ale bez punktow.");
                     }
                 });
+    }
+
+    private void setupNotifications() {
+        NotificationHelper.createPushChannel(this);
+        notificationPermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestPermission(),
+                granted -> {
+                    if (!granted) {
+                        setStatus("Powiadomienia push sa wylaczone, bo nie przyznano zgody systemowej.");
+                    }
+                });
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+        }
+    }
+
+    private void setAppLanguage(String languageTag) {
+        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(languageTag));
+        updateLanguageSelection();
+    }
+
+    private void updateLanguageSelection() {
+        String languageTags = AppCompatDelegate.getApplicationLocales().toLanguageTags();
+        if (languageTags.startsWith("en")) {
+            englishLanguageButton.setChecked(true);
+        } else {
+            polishLanguageButton.setChecked(true);
+        }
     }
 
     private void login() {
@@ -271,6 +346,38 @@ public class MainActivity extends AppCompatActivity {
         loadCurrentUser();
     }
 
+    private void registerFcmToken() {
+        if (FirebaseApp.getApps(this).isEmpty()) {
+            setStatus("FCM nie jest jeszcze skonfigurowany. Dodaj google-services.json do android-app/app.");
+            return;
+        }
+
+        FirebaseMessaging.getInstance().getToken()
+                .addOnSuccessListener(fcmToken -> {
+                    if (fcmToken == null || fcmToken.isEmpty()) {
+                        setStatus("FCM nie zwrocil tokenu urzadzenia.");
+                        return;
+                    }
+                    api.registerFcmToken(new FcmTokenRequest(fcmToken)).enqueue(new Callback<FcmTokenResponse>() {
+                        @Override
+                        public void onResponse(Call<FcmTokenResponse> call, Response<FcmTokenResponse> response) {
+                            if (response.isSuccessful()) {
+                                setStatus("Token FCM zarejestrowany na serwerze.");
+                            } else {
+                                setStatus("Rejestracja tokenu FCM nie powiodla sie: HTTP "
+                                        + response.code() + readError(response));
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(Call<FcmTokenResponse> call, Throwable t) {
+                            setStatus("Blad rejestracji tokenu FCM: " + t.getMessage());
+                        }
+                    });
+                })
+                .addOnFailureListener(e -> setStatus("Nie udalo sie pobrac tokenu FCM: " + e.getMessage()));
+    }
+
     private void loadCurrentUser() {
         setAuthButtonsEnabled(false);
         api.me().enqueue(new Callback<UserMeResponse>() {
@@ -282,12 +389,14 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 UserMeResponse user = response.body();
+                currentUser = user;
                 userSummaryText.setText("Username: " + user.getUsername()
                         + "\nEmail: " + user.getEmail()
                         + "\nRole: " + user.getRole()
                         + "\nID: " + user.getId());
                 showHomePanel();
                 setStatus("Zalogowano jako " + user.getUsername() + ".");
+                registerFcmToken();
                 refreshActiveTripState();
             }
 
@@ -302,11 +411,16 @@ public class MainActivity extends AppCompatActivity {
         stopLocationTracking();
         tokenStorage.clear();
         activeTripId = null;
+        currentUser = null;
         emailInput.setText("");
         passwordInput.setText("");
         usernameInput.setText("");
         tripTitleInput.setText("");
         tripDescriptionInput.setText("");
+        profileFirstNameInput.setText("");
+        profileCityInput.setText("");
+        profileHeightInput.setText("");
+        profileWeightInput.setText("");
         currentTripText.setText(R.string.current_trip_empty);
         gpsStatusText.setText(R.string.gps_status_idle);
         historyTripsText.setText(R.string.trips_empty);
@@ -315,6 +429,83 @@ public class MainActivity extends AppCompatActivity {
         clearTripMap();
         showAuthForm();
         setAuthDone("Wylogowano. Token usuniety z pamieci aplikacji.");
+    }
+
+    private void openProfile() {
+        showProfilePanel();
+        if (currentUser != null) {
+            profileText.setText(formatProfile(currentUser));
+        }
+        loadProfile();
+    }
+
+    private void loadProfile() {
+        setProfileButtonsEnabled(false);
+        profileText.setText(R.string.profile_loading);
+        api.me().enqueue(new Callback<UserMeResponse>() {
+            @Override
+            public void onResponse(Call<UserMeResponse> call, Response<UserMeResponse> response) {
+                if (!response.isSuccessful() || response.body() == null) {
+                    profileText.setText("GET /api/users/me HTTP " + response.code() + readError(response));
+                    setProfileDone("Nie udalo sie odswiezyc profilu.");
+                    return;
+                }
+
+                currentUser = response.body();
+                profileText.setText(formatProfile(currentUser));
+                fillProfileForm(currentUser);
+                setProfileDone("Profil odswiezony.");
+            }
+
+            @Override
+            public void onFailure(Call<UserMeResponse> call, Throwable t) {
+                profileText.setText("Blad profilu: " + t.getMessage());
+                setProfileDone("Blad profilu.");
+            }
+        });
+    }
+
+    private void saveProfile() {
+        Integer height = parseProfileInteger(profileHeightInput, 50, 250);
+        Integer weight = parseProfileInteger(profileWeightInput, 20, 300);
+        if (height == null && !read(profileHeightInput).isEmpty()) {
+            setStatus("Wzrost musi byc liczba od 50 do 250.");
+            return;
+        }
+        if (weight == null && !read(profileWeightInput).isEmpty()) {
+            setStatus("Waga musi byc liczba od 20 do 300.");
+            return;
+        }
+
+        setProfileButtonsEnabled(false);
+        UpdateUserProfileRequest request = new UpdateUserProfileRequest(
+                emptyToNull(read(profileFirstNameInput)),
+                emptyToNull(read(profileCityInput)),
+                height,
+                weight,
+                null);
+
+        api.updateMe(request).enqueue(new Callback<UserMeResponse>() {
+            @Override
+            public void onResponse(Call<UserMeResponse> call, Response<UserMeResponse> response) {
+                if (!response.isSuccessful() || response.body() == null) {
+                    profileText.setText("PUT /api/users/me HTTP " + response.code() + readError(response));
+                    setProfileDone("Nie udalo sie zapisac profilu.");
+                    return;
+                }
+
+                currentUser = response.body();
+                profileText.setText(formatProfile(currentUser));
+                fillProfileForm(currentUser);
+                setProfileDone("Profil zapisany.");
+            }
+
+            @Override
+            public void onFailure(Call<UserMeResponse> call, Throwable t) {
+                profileText.setText("Blad zapisu profilu: " + t.getMessage());
+                setProfileDone("Blad zapisu profilu.");
+            }
+        });
     }
 
     private void openCurrentTrip() {
@@ -477,12 +668,12 @@ public class MainActivity extends AppCompatActivity {
                 List<TripResponse> finishedTrips = finishedTrips(trips);
                 historyTripsList.removeAllViews();
                 if (finishedTrips.isEmpty()) {
-                    historyTripsText.setText("Brak historycznych tras.");
+                    historyTripsText.setText(R.string.history_empty);
                     setHistoryDone("Historia tras odswiezona.");
                     return;
                 }
 
-                historyTripsText.setText("Wybierz trase, aby zobaczyc szczegoly.");
+                historyTripsText.setText(R.string.history_choose_trip);
                 renderHistoryTripButtons(finishedTrips);
                 setHistoryDone("Historia tras odswiezona.");
             }
@@ -592,6 +783,7 @@ public class MainActivity extends AppCompatActivity {
     private void showAuthForm() {
         authPanel.setVisibility(View.VISIBLE);
         homePanel.setVisibility(View.GONE);
+        profilePanel.setVisibility(View.GONE);
         currentTripPanel.setVisibility(View.GONE);
         historyPanel.setVisibility(View.GONE);
         tripDetailsPanel.setVisibility(View.GONE);
@@ -601,15 +793,27 @@ public class MainActivity extends AppCompatActivity {
     private void showHomePanel() {
         authPanel.setVisibility(View.GONE);
         homePanel.setVisibility(View.VISIBLE);
+        profilePanel.setVisibility(View.GONE);
         currentTripPanel.setVisibility(View.GONE);
         historyPanel.setVisibility(View.GONE);
         tripDetailsPanel.setVisibility(View.GONE);
         setHomeButtonsEnabled(true);
     }
 
+    private void showProfilePanel() {
+        authPanel.setVisibility(View.GONE);
+        homePanel.setVisibility(View.GONE);
+        profilePanel.setVisibility(View.VISIBLE);
+        currentTripPanel.setVisibility(View.GONE);
+        historyPanel.setVisibility(View.GONE);
+        tripDetailsPanel.setVisibility(View.GONE);
+        setProfileButtonsEnabled(true);
+    }
+
     private void showCurrentTripPanel() {
         authPanel.setVisibility(View.GONE);
         homePanel.setVisibility(View.GONE);
+        profilePanel.setVisibility(View.GONE);
         currentTripPanel.setVisibility(View.VISIBLE);
         historyPanel.setVisibility(View.GONE);
         tripDetailsPanel.setVisibility(View.GONE);
@@ -619,6 +823,7 @@ public class MainActivity extends AppCompatActivity {
     private void showHistoryPanel() {
         authPanel.setVisibility(View.GONE);
         homePanel.setVisibility(View.GONE);
+        profilePanel.setVisibility(View.GONE);
         currentTripPanel.setVisibility(View.GONE);
         historyPanel.setVisibility(View.VISIBLE);
         tripDetailsPanel.setVisibility(View.GONE);
@@ -628,6 +833,7 @@ public class MainActivity extends AppCompatActivity {
     private void showTripDetailsPanel() {
         authPanel.setVisibility(View.GONE);
         homePanel.setVisibility(View.GONE);
+        profilePanel.setVisibility(View.GONE);
         currentTripPanel.setVisibility(View.GONE);
         historyPanel.setVisibility(View.GONE);
         tripDetailsPanel.setVisibility(View.VISIBLE);
@@ -654,6 +860,11 @@ public class MainActivity extends AppCompatActivity {
         setStatus(message);
     }
 
+    private void setProfileDone(String message) {
+        setProfileButtonsEnabled(true);
+        setStatus(message);
+    }
+
     private void setDetailsDone(String message) {
         setDetailsButtonsEnabled(true);
         setStatus(message);
@@ -666,8 +877,15 @@ public class MainActivity extends AppCompatActivity {
 
     private void setHomeButtonsEnabled(boolean enabled) {
         currentTripMenuButton.setEnabled(enabled);
+        profileMenuButton.setEnabled(enabled);
         historyMenuButton.setEnabled(enabled);
         logoutButton.setEnabled(enabled);
+    }
+
+    private void setProfileButtonsEnabled(boolean enabled) {
+        saveProfileButton.setEnabled(enabled);
+        refreshProfileButton.setEnabled(enabled);
+        backFromProfileButton.setEnabled(enabled);
     }
 
     private void setTripButtonsEnabled(boolean enabled) {
@@ -715,6 +933,56 @@ public class MainActivity extends AppCompatActivity {
         return finishedTrips;
     }
 
+    private String formatProfile(UserMeResponse user) {
+        UserProfileResponse profile = user.getProfile();
+        return getString(R.string.profile_first_name_label) + ": " + profileString(profile == null ? null : profile.getFirstName())
+                + "\n" + getString(R.string.profile_city_label) + ": " + profileString(profile == null ? null : profile.getCity())
+                + "\n" + getString(R.string.profile_height_label) + ": " + profileInteger(profile == null ? null : profile.getHeight(), " cm")
+                + "\n" + getString(R.string.profile_weight_label) + ": " + profileInteger(profile == null ? null : profile.getWeight(), " kg");
+    }
+
+    private String profileString(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return getString(R.string.profile_empty_value);
+        }
+        return value;
+    }
+
+    private String profileInteger(Integer value, String unit) {
+        if (value == null) {
+            return getString(R.string.profile_empty_value);
+        }
+        return value + unit;
+    }
+
+    private void fillProfileForm(UserMeResponse user) {
+        UserProfileResponse profile = user.getProfile();
+        profileFirstNameInput.setText(profile == null || profile.getFirstName() == null ? "" : profile.getFirstName());
+        profileCityInput.setText(profile == null || profile.getCity() == null ? "" : profile.getCity());
+        profileHeightInput.setText(profile == null || profile.getHeight() == null ? "" : String.valueOf(profile.getHeight()));
+        profileWeightInput.setText(profile == null || profile.getWeight() == null ? "" : String.valueOf(profile.getWeight()));
+    }
+
+    private Integer parseProfileInteger(TextInputEditText input, int min, int max) {
+        String value = read(input);
+        if (value.isEmpty()) {
+            return null;
+        }
+        try {
+            int parsed = Integer.parseInt(value);
+            if (parsed < min || parsed > max) {
+                return null;
+            }
+            return parsed;
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private String emptyToNull(String value) {
+        return value.isEmpty() ? null : value;
+    }
+
     private String formatTrip(TripResponse trip) {
         return formatTripDetails(trip);
     }
@@ -722,25 +990,27 @@ public class MainActivity extends AppCompatActivity {
     private String formatTripListItem(TripResponse trip) {
         return "#" + trip.getId()
                 + "  " + trip.getTitle()
-                + "\nStart: " + trip.getStartTime()
-                + "\nDystans: " + formatDistance(trip.getDistanceMeters())
-                + "   Punkty: " + trip.getLocationPointCount();
+                + "\n" + getString(R.string.trip_start_label) + ": " + trip.getStartTime()
+                + "\n" + getString(R.string.trip_distance_label) + ": " + formatDistance(trip.getDistanceMeters())
+                + "   " + getString(R.string.trip_points_label) + ": " + trip.getLocationPointCount();
     }
 
     private String formatTripDetails(TripResponse trip) {
         StringBuilder builder = new StringBuilder();
         builder.append("#").append(trip.getId())
                 .append("  ").append(trip.getTitle())
-                .append(trip.isFinished() ? "  [finished]" : "  [active]")
-                .append("\nStart: ").append(trip.getStartTime());
+                .append(trip.isFinished()
+                        ? "  [" + getString(R.string.trip_status_finished) + "]"
+                        : "  [" + getString(R.string.trip_status_active) + "]")
+                .append("\n").append(getString(R.string.trip_start_label)).append(": ").append(trip.getStartTime());
         if (trip.getEndTime() != null) {
-            builder.append("\nKoniec: ").append(trip.getEndTime());
+            builder.append("\n").append(getString(R.string.trip_end_label)).append(": ").append(trip.getEndTime());
         }
-        builder.append("\nCzas: ").append(formatDuration(trip))
-                .append("\nPunkty: ").append(trip.getLocationPointCount())
-                .append("\nDystans: ").append(formatDistance(trip.getDistanceMeters()));
+        builder.append("\n").append(getString(R.string.trip_duration_label)).append(": ").append(formatDuration(trip))
+                .append("\n").append(getString(R.string.trip_points_label)).append(": ").append(trip.getLocationPointCount())
+                .append("\n").append(getString(R.string.trip_distance_label)).append(": ").append(formatDistance(trip.getDistanceMeters()));
         if (trip.getDescription() != null && !trip.getDescription().isEmpty()) {
-            builder.append("\nOpis: ").append(trip.getDescription());
+            builder.append("\n").append(getString(R.string.trip_description_label)).append(": ").append(trip.getDescription());
         }
         builder.append(formatLocationPoints(trip.getLocationPoints()));
         return builder.toString();
@@ -748,10 +1018,10 @@ public class MainActivity extends AppCompatActivity {
 
     private String formatLocationPoints(List<LocationPointResponse> points) {
         if (points == null || points.isEmpty()) {
-            return "\n\nPunkty GPS:\nBrak punktow.";
+            return "\n\n" + getString(R.string.gps_points_label) + ":\n" + getString(R.string.gps_points_empty);
         }
 
-        StringBuilder builder = new StringBuilder("\n\nPunkty GPS:");
+        StringBuilder builder = new StringBuilder("\n\n" + getString(R.string.gps_points_label) + ":");
         for (int i = 0; i < points.size(); i++) {
             LocationPointResponse point = points.get(i);
             builder.append("\n").append(i + 1).append(". ")
@@ -834,11 +1104,11 @@ public class MainActivity extends AppCompatActivity {
     private String formatDuration(TripResponse trip) {
         Instant start = parseInstant(trip.getStartTime());
         if (start == null) {
-            return "brak danych";
+            return getString(R.string.duration_no_data);
         }
         Instant end = trip.getEndTime() == null ? Instant.now() : parseInstant(trip.getEndTime());
         if (end == null || end.isBefore(start)) {
-            return "brak danych";
+            return getString(R.string.duration_no_data);
         }
 
         Duration duration = Duration.between(start, end);

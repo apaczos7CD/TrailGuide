@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="pl.trailguide.app" />
+                  <option name="mobileSdkAppId" value="1:89906531141:android:51886d145af49b0b66cc2c" />
+                  <option name="projectId" value="trailguide-f398f" />
+                  <option name="projectNumber" value="89906531141" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

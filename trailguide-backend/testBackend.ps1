@@ -30,3 +30,20 @@ Invoke-RestMethod -Method Get "http://localhost:8080/api/trips/$tripId" `
 
 Invoke-RestMethod -Method Get http://localhost:8080/api/trips `
   -Headers @{ Authorization = "Bearer $token" }
+
+$env:JAVA_HOME = "C:\Users\apacz\.jdks\ms-21.0.11"
+$env:Path = "$env:JAVA_HOME\bin;$env:Path"
+
+$adminResponse = Invoke-RestMethod -Method Post http://localhost:8080/api/auth/login `
+  -ContentType "application/json" `
+  -Body '{"email":"admin@example.com","password":"AdminPassword123!"}'
+
+$adminToken = $adminResponse.token
+
+Invoke-RestMethod -Method Get http://localhost:8080/api/admin/users `
+  -Headers @{ Authorization = "Bearer $adminToken" }
+
+  Invoke-RestMethod -Method Post http://localhost:8080/api/notifications `
+  -Headers @{ Authorization = "Bearer $adminToken" } `
+  -ContentType "application/json" `
+  -Body '{"title":"Uwaga na trasie","body":"Szlak jest dzisiaj częściowo zamknięty."}'

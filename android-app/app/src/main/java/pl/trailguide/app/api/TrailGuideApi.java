@@ -7,6 +7,7 @@ import retrofit2.http.Body;
 import retrofit2.http.GET;
 import retrofit2.http.Path;
 import retrofit2.http.POST;
+import retrofit2.http.PUT;
 
 public interface TrailGuideApi {
     @POST("api/auth/login")
@@ -17,6 +18,12 @@ public interface TrailGuideApi {
 
     @GET("api/users/me")
     Call<UserMeResponse> me();
+
+    @PUT("api/users/me")
+    Call<UserMeResponse> updateMe(@Body UpdateUserProfileRequest request);
+
+    @POST("api/fcm-token")
+    Call<FcmTokenResponse> registerFcmToken(@Body FcmTokenRequest request);
 
     @POST("api/trips/start")
     Call<TripResponse> startTrip(@Body StartTripRequest request);

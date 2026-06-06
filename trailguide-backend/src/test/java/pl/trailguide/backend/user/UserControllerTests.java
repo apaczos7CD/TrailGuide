@@ -54,6 +54,7 @@ class UserControllerTests {
 				.content("""
 						{
 						  "firstName": "Adam",
+						  "city": "Krakow",
 						  "height": 170,
 						  "weight": 75,
 						  "hikingLevel": "BEGINNER"
@@ -62,6 +63,7 @@ class UserControllerTests {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.username").value("turysta123"))
 				.andExpect(jsonPath("$.profile.firstName").value("Adam"))
+				.andExpect(jsonPath("$.profile.city").value("Krakow"))
 				.andExpect(jsonPath("$.profile.height").value(170))
 				.andExpect(jsonPath("$.profile.weight").value(75))
 				.andExpect(jsonPath("$.profile.hikingLevel").value("BEGINNER"));

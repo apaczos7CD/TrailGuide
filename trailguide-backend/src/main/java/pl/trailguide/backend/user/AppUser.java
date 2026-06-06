@@ -68,4 +68,9 @@ public class AppUser {
 	public Instant getCreatedAt() {
 		return createdAt;
 	}
+
+	public void updateCredentials(String passwordHash, UserRole role) {
+		this.passwordHash = passwordHash;
+		this.role = role;
+	}
 }

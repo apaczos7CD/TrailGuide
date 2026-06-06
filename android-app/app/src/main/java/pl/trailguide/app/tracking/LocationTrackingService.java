@@ -116,7 +116,9 @@ public class LocationTrackingService extends Service {
 
             activeTripId = tripId;
             sentLocationPoints = 0;
-            startForegroundLocation(buildNotification("GPS tracking aktywny", "Trasa #" + tripId));
+            startForegroundLocation(buildNotification(
+                    getString(R.string.notification_tracking_title),
+                    getString(R.string.notification_trip_prefix) + " #" + tripId));
             startTracking();
             return START_REDELIVER_INTENT;
         }
@@ -177,13 +179,13 @@ public class LocationTrackingService extends Service {
             public void onResponse(Call<LocationPointResponse> call, Response<LocationPointResponse> response) {
                 if (response.isSuccessful()) {
                     sentLocationPoints++;
-                    updateNotification("Wyslano punkt GPS #" + sentLocationPoints);
+                    updateNotification(getString(R.string.notification_point_sent, sentLocationPoints));
                 }
             }
 
             @Override
             public void onFailure(Call<LocationPointResponse> call, Throwable t) {
-                updateNotification("Blad wysylki punktu GPS");
+                updateNotification(getString(R.string.notification_point_error));
             }
         });
     }
@@ -240,6 +242,6 @@ public class LocationTrackingService extends Service {
 
     private void updateNotification(String text) {
         NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        manager.notify(NOTIFICATION_ID, buildNotification("GPS tracking aktywny", text));
+        manager.notify(NOTIFICATION_ID, buildNotification(getString(R.string.notification_tracking_title), text));
     }
 }

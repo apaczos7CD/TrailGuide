@@ -26,6 +26,9 @@ public class UserProfile {
 	@Column(name = "first_name", length = 80)
 	private String firstName;
 
+	@Column(length = 120)
+	private String city;
+
 	private Integer height;
 
 	private Integer weight;
@@ -57,6 +60,10 @@ public class UserProfile {
 		return height;
 	}
 
+	public String getCity() {
+		return city;
+	}
+
 	public Integer getWeight() {
 		return weight;
 	}
@@ -65,8 +72,9 @@ public class UserProfile {
 		return hikingLevel;
 	}
 
-	public void update(String firstName, Integer height, Integer weight, HikingLevel hikingLevel) {
+	public void update(String firstName, String city, Integer height, Integer weight, HikingLevel hikingLevel) {
 		this.firstName = firstName;
+		this.city = city;
 		this.height = height;
 		this.weight = weight;
 		this.hikingLevel = hikingLevel;

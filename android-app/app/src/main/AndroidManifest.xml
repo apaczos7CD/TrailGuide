@@ -20,6 +20,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TrailGuide"
         android:usesCleartextTraffic="true">
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="@string/push_notification_channel_id" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_launcher_foreground" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -34,6 +41,21 @@
             android:name=".tracking.LocationTrackingService"
             android:exported="false"
             android:foregroundServiceType="location" />
+        <service
+            android:name=".notifications.TrailGuideFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="true" />
+        </service>
     </application>
 
 </manifest>

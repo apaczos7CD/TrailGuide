@@ -2,6 +2,10 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 android {
     namespace = "pl.trailguide.app"
     compileSdk {
@@ -44,6 +48,8 @@ dependencies {
     implementation(libs.security.crypto)
     implementation(libs.play.services.location)
     implementation(libs.osmdroid.android)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
     testImplementation(libs.junit)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.ext.junit)
