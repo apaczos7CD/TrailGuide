@@ -139,7 +139,7 @@ public class MainActivity extends AppCompatActivity {
             tokenStorage = new TokenStorage(this);
             api = ApiClient.create(tokenStorage::getToken);
         } catch (GeneralSecurityException | IOException e) {
-            setStatus("Nie mozna zainicjalizowac bezpiecznego zapisu tokenu: " + e.getMessage());
+            setStatus(getString(R.string.status_token_storage_init_error, e.getMessage()));
             setAuthButtonsEnabled(false);
             return;
         }
@@ -165,7 +165,7 @@ public class MainActivity extends AppCompatActivity {
         backFromDetailsButton.setOnClickListener(v -> showHistoryPanel());
 
         if (tokenStorage.getToken() != null) {
-            setStatus("Znaleziono zapisany token. Sprawdzam /api/users/me...");
+            setStatus(getString(R.string.status_saved_token_found));
             loadCurrentUser();
         } else {
             showAuthForm();
@@ -252,7 +252,7 @@ public class MainActivity extends AppCompatActivity {
                     if (granted) {
                         startLocationTracking();
                     } else {
-                        setGpsStatus("GPS: brak zgody lokalizacji. Trasa dziala, ale bez punktow.");
+                        setGpsStatus(getString(R.string.gps_status_location_permission_denied));
                     }
                 });
     }
@@ -263,7 +263,7 @@ public class MainActivity extends AppCompatActivity {
                 new ActivityResultContracts.RequestPermission(),
                 granted -> {
                     if (!granted) {
-                        setStatus("Powiadomienia push sa wylaczone, bo nie przyznano zgody systemowej.");
+                        setStatus(getString(R.string.status_notification_permission_denied));
                     }
                 });
 
@@ -295,7 +295,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        setAuthBusy("Logowanie...");
+        setAuthBusy(getString(R.string.status_login_in_progress));
         api.login(new LoginRequest(email, password)).enqueue(new Callback<AuthResponse>() {
             @Override
             public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
@@ -304,7 +304,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<AuthResponse> call, Throwable t) {
-                setAuthDone("Blad logowania: " + t.getMessage());
+                setAuthDone(getString(R.string.status_login_error, t.getMessage()));
             }
         });
     }
@@ -314,14 +314,14 @@ public class MainActivity extends AppCompatActivity {
         String email = read(emailInput);
         String password = read(passwordInput);
         if (username.length() < 3) {
-            setStatus("Username musi miec co najmniej 3 znaki.");
+            setStatus(getString(R.string.status_username_too_short));
             return;
         }
         if (!validateCredentials(email, password)) {
             return;
         }
 
-        setAuthBusy("Rejestracja...");
+        setAuthBusy(getString(R.string.status_register_in_progress));
         api.register(new RegisterRequest(username, email, password)).enqueue(new Callback<AuthResponse>() {
             @Override
             public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
@@ -330,52 +330,51 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<AuthResponse> call, Throwable t) {
-                setAuthDone("Blad rejestracji: " + t.getMessage());
+                setAuthDone(getString(R.string.status_register_error, t.getMessage()));
             }
         });
     }
 
     private void handleAuthResponse(Response<AuthResponse> response) {
         if (!response.isSuccessful() || response.body() == null || response.body().getToken() == null) {
-            setAuthDone("Auth nie powiodl sie: HTTP " + response.code() + readError(response));
+            setAuthDone(httpStatus(R.string.status_auth_failed_http, response));
             return;
         }
 
         tokenStorage.saveToken(response.body().getToken());
-        setStatus("Token zapisany. Sprawdzam /api/users/me...");
+        setStatus(getString(R.string.status_token_saved));
         loadCurrentUser();
     }
 
     private void registerFcmToken() {
         if (FirebaseApp.getApps(this).isEmpty()) {
-            setStatus("FCM nie jest jeszcze skonfigurowany. Dodaj google-services.json do android-app/app.");
+            setStatus(getString(R.string.status_fcm_not_configured));
             return;
         }
 
         FirebaseMessaging.getInstance().getToken()
                 .addOnSuccessListener(fcmToken -> {
                     if (fcmToken == null || fcmToken.isEmpty()) {
-                        setStatus("FCM nie zwrocil tokenu urzadzenia.");
+                        setStatus(getString(R.string.status_fcm_token_empty));
                         return;
                     }
                     api.registerFcmToken(new FcmTokenRequest(fcmToken)).enqueue(new Callback<FcmTokenResponse>() {
                         @Override
                         public void onResponse(Call<FcmTokenResponse> call, Response<FcmTokenResponse> response) {
                             if (response.isSuccessful()) {
-                                setStatus("Token FCM zarejestrowany na serwerze.");
+                                setStatus(getString(R.string.status_fcm_token_registered));
                             } else {
-                                setStatus("Rejestracja tokenu FCM nie powiodla sie: HTTP "
-                                        + response.code() + readError(response));
+                                setStatus(httpStatus(R.string.status_fcm_register_failed_http, response));
                             }
                         }
 
                         @Override
                         public void onFailure(Call<FcmTokenResponse> call, Throwable t) {
-                            setStatus("Blad rejestracji tokenu FCM: " + t.getMessage());
+                            setStatus(getString(R.string.status_fcm_register_error, t.getMessage()));
                         }
                     });
                 })
-                .addOnFailureListener(e -> setStatus("Nie udalo sie pobrac tokenu FCM: " + e.getMessage()));
+                .addOnFailureListener(e -> setStatus(getString(R.string.status_fcm_token_fetch_error, e.getMessage())));
     }
 
     private void loadCurrentUser() {
@@ -384,25 +383,23 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<UserMeResponse> call, Response<UserMeResponse> response) {
                 if (!response.isSuccessful() || response.body() == null) {
-                    setAuthDone("GET /api/users/me nie powiodl sie: HTTP " + response.code() + readError(response));
+                    setAuthDone(httpStatus(R.string.status_users_me_failed_http, response));
                     return;
                 }
 
                 UserMeResponse user = response.body();
                 currentUser = user;
-                userSummaryText.setText("Username: " + user.getUsername()
-                        + "\nEmail: " + user.getEmail()
-                        + "\nRole: " + user.getRole()
-                        + "\nID: " + user.getId());
+                userSummaryText.setText(getString(R.string.user_summary_format,
+                        user.getUsername(), user.getEmail(), user.getRole(), user.getId()));
                 showHomePanel();
-                setStatus("Zalogowano jako " + user.getUsername() + ".");
+                setStatus(getString(R.string.status_logged_in_as, user.getUsername()));
                 registerFcmToken();
                 refreshActiveTripState();
             }
 
             @Override
             public void onFailure(Call<UserMeResponse> call, Throwable t) {
-                setAuthDone("Blad GET /api/users/me: " + t.getMessage());
+                setAuthDone(getString(R.string.status_users_me_error, t.getMessage()));
             }
         });
     }
@@ -428,7 +425,7 @@ public class MainActivity extends AppCompatActivity {
         tripDetailsText.setText(R.string.trip_details_loading);
         clearTripMap();
         showAuthForm();
-        setAuthDone("Wylogowano. Token usuniety z pamieci aplikacji.");
+        setAuthDone(getString(R.string.status_logged_out));
     }
 
     private void openProfile() {
@@ -446,21 +443,21 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<UserMeResponse> call, Response<UserMeResponse> response) {
                 if (!response.isSuccessful() || response.body() == null) {
-                    profileText.setText("GET /api/users/me HTTP " + response.code() + readError(response));
-                    setProfileDone("Nie udalo sie odswiezyc profilu.");
+                    profileText.setText(httpStatus(R.string.status_users_me_http, response));
+                    setProfileDone(getString(R.string.status_profile_refresh_failed));
                     return;
                 }
 
                 currentUser = response.body();
                 profileText.setText(formatProfile(currentUser));
                 fillProfileForm(currentUser);
-                setProfileDone("Profil odswiezony.");
+                setProfileDone(getString(R.string.status_profile_refreshed));
             }
 
             @Override
             public void onFailure(Call<UserMeResponse> call, Throwable t) {
-                profileText.setText("Blad profilu: " + t.getMessage());
-                setProfileDone("Blad profilu.");
+                profileText.setText(getString(R.string.status_profile_error, t.getMessage()));
+                setProfileDone(getString(R.string.status_profile_error_short));
             }
         });
     }
@@ -469,11 +466,11 @@ public class MainActivity extends AppCompatActivity {
         Integer height = parseProfileInteger(profileHeightInput, 50, 250);
         Integer weight = parseProfileInteger(profileWeightInput, 20, 300);
         if (height == null && !read(profileHeightInput).isEmpty()) {
-            setStatus("Wzrost musi byc liczba od 50 do 250.");
+            setStatus(getString(R.string.status_height_invalid));
             return;
         }
         if (weight == null && !read(profileWeightInput).isEmpty()) {
-            setStatus("Waga musi byc liczba od 20 do 300.");
+            setStatus(getString(R.string.status_weight_invalid));
             return;
         }
 
@@ -489,21 +486,21 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<UserMeResponse> call, Response<UserMeResponse> response) {
                 if (!response.isSuccessful() || response.body() == null) {
-                    profileText.setText("PUT /api/users/me HTTP " + response.code() + readError(response));
-                    setProfileDone("Nie udalo sie zapisac profilu.");
+                    profileText.setText(httpStatus(R.string.status_users_me_put_http, response));
+                    setProfileDone(getString(R.string.status_profile_save_failed));
                     return;
                 }
 
                 currentUser = response.body();
                 profileText.setText(formatProfile(currentUser));
                 fillProfileForm(currentUser);
-                setProfileDone("Profil zapisany.");
+                setProfileDone(getString(R.string.status_profile_saved));
             }
 
             @Override
             public void onFailure(Call<UserMeResponse> call, Throwable t) {
-                profileText.setText("Blad zapisu profilu: " + t.getMessage());
-                setProfileDone("Blad zapisu profilu.");
+                profileText.setText(getString(R.string.status_profile_save_error, t.getMessage()));
+                setProfileDone(getString(R.string.status_profile_save_error_short));
             }
         });
     }
@@ -523,12 +520,12 @@ public class MainActivity extends AppCompatActivity {
         String description = read(tripDescriptionInput);
 
         setTripButtonsEnabled(false);
-        setStatus("Startuje trase...");
+        setStatus(getString(R.string.status_trip_starting));
         api.startTrip(new StartTripRequest(title, description)).enqueue(new Callback<TripResponse>() {
             @Override
             public void onResponse(Call<TripResponse> call, Response<TripResponse> response) {
                 if (!response.isSuccessful() || response.body() == null) {
-                    setTripDone("Start trip nie powiodl sie: HTTP " + response.code() + readError(response));
+                    setTripDone(httpStatus(R.string.status_trip_start_failed_http, response));
                     return;
                 }
 
@@ -536,13 +533,13 @@ public class MainActivity extends AppCompatActivity {
                 currentTripText.setText(formatTrip(response.body()));
                 tripTitleInput.setText("");
                 tripDescriptionInput.setText("");
-                setTripDone("Trasa wystartowala. ID: " + activeTripId);
+                setTripDone(getString(R.string.status_trip_started, activeTripId));
                 startLocationTracking();
             }
 
             @Override
             public void onFailure(Call<TripResponse> call, Throwable t) {
-                setTripDone("Blad startu trasy: " + t.getMessage());
+                setTripDone(getString(R.string.status_trip_start_error, t.getMessage()));
             }
         });
     }
@@ -553,50 +550,50 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (!hasLocationPermission()) {
-            setStatus("Potrzebna zgoda lokalizacji do zapisu punktow GPS.");
-            setGpsStatus("GPS: czeka na zgode lokalizacji.");
+            setStatus(getString(R.string.status_location_permission_needed));
+            setGpsStatus(getString(R.string.gps_status_waiting_permission));
             locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
             return;
         }
 
         LocationTrackingService.start(this, activeTripId);
         trackingLocation = true;
-        setGpsStatus("GPS: foreground service wlaczony. Punkty beda wysylane co ok. 10 sekund.");
+        setGpsStatus(getString(R.string.gps_status_service_running));
     }
 
     private void stopLocationTracking() {
         LocationTrackingService.stop(this);
         trackingLocation = false;
-        setGpsStatus("GPS: zatrzymany.");
+        setGpsStatus(getString(R.string.gps_status_stopped));
     }
 
     private void finishActiveTrip() {
         if (activeTripId == null) {
-            setStatus("Brak aktywnej trasy do zakonczenia.");
+            setStatus(getString(R.string.status_no_active_trip_to_finish));
             return;
         }
 
         long tripId = activeTripId;
         stopLocationTracking();
         setTripButtonsEnabled(false);
-        setStatus("Koncze trase ID " + tripId + "...");
+        setStatus(getString(R.string.status_trip_finishing, tripId));
         api.finishTrip(tripId, new FinishTripRequest()).enqueue(new Callback<TripResponse>() {
             @Override
             public void onResponse(Call<TripResponse> call, Response<TripResponse> response) {
                 if (!response.isSuccessful() || response.body() == null) {
-                    setTripDone("Finish trip nie powiodl sie: HTTP " + response.code() + readError(response));
+                    setTripDone(httpStatus(R.string.status_trip_finish_failed_http, response));
                     return;
                 }
 
                 activeTripId = null;
                 currentTripText.setText(R.string.current_trip_empty);
                 gpsStatusText.setText(R.string.gps_status_idle);
-                setTripDone("Trasa zakonczona. Dystans: " + response.body().getDistanceMeters() + " m");
+                setTripDone(getString(R.string.status_trip_finished, response.body().getDistanceMeters()));
             }
 
             @Override
             public void onFailure(Call<TripResponse> call, Throwable t) {
-                setTripDone("Blad konczenia trasy: " + t.getMessage());
+                setTripDone(getString(R.string.status_trip_finish_error, t.getMessage()));
             }
         });
     }
@@ -607,14 +604,14 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<List<TripResponse>> call, Response<List<TripResponse>> response) {
                 if (!response.isSuccessful() || response.body() == null) {
-                    setTripDone("GET /api/trips nie powiodl sie: HTTP " + response.code() + readError(response));
+                    setTripDone(httpStatus(R.string.status_trips_failed_http, response));
                     return;
                 }
 
                 activeTripId = findActiveTripId(response.body());
                 if (activeTripId == null) {
                     currentTripText.setText(R.string.current_trip_empty);
-                    setTripDone("Brak aktywnej trasy.");
+                    setTripDone(getString(R.string.status_no_active_trip));
                     return;
                 }
 
@@ -623,7 +620,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<List<TripResponse>> call, Throwable t) {
-                setTripDone("Blad GET /api/trips: " + t.getMessage());
+                setTripDone(getString(R.string.status_trips_error, t.getMessage()));
             }
         });
     }
@@ -633,13 +630,12 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<TripResponse> call, Response<TripResponse> response) {
                 if (!response.isSuccessful() || response.body() == null) {
-                    setTripDone("GET /api/trips/" + tripId + " nie powiodl sie: HTTP "
-                            + response.code() + readError(response));
+                    setTripDone(httpStatus(R.string.status_trip_details_failed_http, response, tripId));
                     return;
                 }
 
                 currentTripText.setText(formatTrip(response.body()));
-                setTripDone("Aktualna trasa odswiezona.");
+                setTripDone(getString(R.string.status_current_trip_refreshed));
                 if (!response.body().isFinished()) {
                     activeTripId = response.body().getId();
                     startLocationTracking();
@@ -648,7 +644,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<TripResponse> call, Throwable t) {
-                setTripDone("Blad szczegolow trasy: " + t.getMessage());
+                setTripDone(getString(R.string.status_trip_details_error, t.getMessage()));
             }
         });
     }
@@ -659,7 +655,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<List<TripResponse>> call, Response<List<TripResponse>> response) {
                 if (!response.isSuccessful() || response.body() == null) {
-                    setHistoryDone("GET /api/trips nie powiodl sie: HTTP " + response.code() + readError(response));
+                    setHistoryDone(httpStatus(R.string.status_trips_failed_http, response));
                     return;
                 }
 
@@ -669,18 +665,18 @@ public class MainActivity extends AppCompatActivity {
                 historyTripsList.removeAllViews();
                 if (finishedTrips.isEmpty()) {
                     historyTripsText.setText(R.string.history_empty);
-                    setHistoryDone("Historia tras odswiezona.");
+                    setHistoryDone(getString(R.string.status_history_refreshed));
                     return;
                 }
 
                 historyTripsText.setText(R.string.history_choose_trip);
                 renderHistoryTripButtons(finishedTrips);
-                setHistoryDone("Historia tras odswiezona.");
+                setHistoryDone(getString(R.string.status_history_refreshed));
             }
 
             @Override
             public void onFailure(Call<List<TripResponse>> call, Throwable t) {
-                setHistoryDone("Blad GET /api/trips: " + t.getMessage());
+                setHistoryDone(getString(R.string.status_trips_error, t.getMessage()));
             }
         });
     }
@@ -711,22 +707,21 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<TripResponse> call, Response<TripResponse> response) {
                 if (!response.isSuccessful() || response.body() == null) {
-                    tripDetailsText.setText("Nie udalo sie pobrac szczegolow trasy: HTTP "
-                            + response.code() + readError(response));
-                    setDetailsDone("Nie udalo sie pobrac szczegolow trasy.");
+                    tripDetailsText.setText(httpStatus(R.string.status_trip_details_fetch_failed_http, response));
+                    setDetailsDone(getString(R.string.status_trip_details_fetch_failed));
                     return;
                 }
 
                 TripResponse trip = response.body();
                 tripDetailsText.setText(formatTripDetails(trip));
                 renderTripMap(trip);
-                setDetailsDone("Szczegoly trasy zaladowane.");
+                setDetailsDone(getString(R.string.status_trip_details_loaded));
             }
 
             @Override
             public void onFailure(Call<TripResponse> call, Throwable t) {
-                tripDetailsText.setText("Blad szczegolow trasy: " + t.getMessage());
-                setDetailsDone("Blad szczegolow trasy.");
+                tripDetailsText.setText(getString(R.string.status_trip_details_error, t.getMessage()));
+                setDetailsDone(getString(R.string.status_trip_details_error_short));
             }
         });
     }
@@ -742,18 +737,18 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<List<TripResponse>> call, Throwable t) {
-                setStatus("Zalogowano. Nie udalo sie odswiezyc tras: " + t.getMessage());
+                setStatus(getString(R.string.status_logged_in_trips_refresh_error, t.getMessage()));
             }
         });
     }
 
     private boolean validateCredentials(String email, String password) {
         if (TextUtils.isEmpty(email) || TextUtils.isEmpty(password)) {
-            setStatus("Podaj email i haslo.");
+            setStatus(getString(R.string.status_credentials_required));
             return false;
         }
         if (password.length() < 8) {
-            setStatus("Haslo musi miec co najmniej 8 znakow.");
+            setStatus(getString(R.string.status_password_too_short));
             return false;
         }
         return true;
@@ -778,6 +773,14 @@ public class MainActivity extends AppCompatActivity {
         } catch (IOException e) {
             return "";
         }
+    }
+
+    private String httpStatus(int messageResId, Response<?> response, Object... args) {
+        Object[] formatArgs = new Object[args.length + 2];
+        System.arraycopy(args, 0, formatArgs, 0, args.length);
+        formatArgs[args.length] = response.code();
+        formatArgs[args.length + 1] = readError(response);
+        return getString(messageResId, formatArgs);
     }
 
     private void showAuthForm() {
@@ -937,8 +940,10 @@ public class MainActivity extends AppCompatActivity {
         UserProfileResponse profile = user.getProfile();
         return getString(R.string.profile_first_name_label) + ": " + profileString(profile == null ? null : profile.getFirstName())
                 + "\n" + getString(R.string.profile_city_label) + ": " + profileString(profile == null ? null : profile.getCity())
-                + "\n" + getString(R.string.profile_height_label) + ": " + profileInteger(profile == null ? null : profile.getHeight(), " cm")
-                + "\n" + getString(R.string.profile_weight_label) + ": " + profileInteger(profile == null ? null : profile.getWeight(), " kg");
+                + "\n" + getString(R.string.profile_height_label) + ": "
+                + profileInteger(profile == null ? null : profile.getHeight(), R.string.profile_height_unit)
+                + "\n" + getString(R.string.profile_weight_label) + ": "
+                + profileInteger(profile == null ? null : profile.getWeight(), R.string.profile_weight_unit);
     }
 
     private String profileString(String value) {
@@ -948,11 +953,11 @@ public class MainActivity extends AppCompatActivity {
         return value;
     }
 
-    private String profileInteger(Integer value, String unit) {
+    private String profileInteger(Integer value, int unitResId) {
         if (value == null) {
             return getString(R.string.profile_empty_value);
         }
-        return value + unit;
+        return value + getString(unitResId);
     }
 
     private void fillProfileForm(UserMeResponse user) {
@@ -1026,13 +1031,15 @@ public class MainActivity extends AppCompatActivity {
             LocationPointResponse point = points.get(i);
             builder.append("\n").append(i + 1).append(". ")
                     .append(point.getTimestamp())
-                    .append("\n   Lat: ").append(point.getLatitude())
-                    .append("\n   Lng: ").append(point.getLongitude());
+                    .append("\n   ").append(getString(R.string.gps_latitude_label)).append(": ").append(point.getLatitude())
+                    .append("\n   ").append(getString(R.string.gps_longitude_label)).append(": ").append(point.getLongitude());
             if (point.getAltitude() != null) {
-                builder.append("\n   Alt: ").append(point.getAltitude()).append(" m");
+                builder.append("\n   ").append(getString(R.string.gps_altitude_label)).append(": ")
+                        .append(point.getAltitude()).append(getString(R.string.distance_meter_unit));
             }
             if (point.getAccuracy() != null) {
-                builder.append("\n   Accuracy: ").append(point.getAccuracy()).append(" m");
+                builder.append("\n   ").append(getString(R.string.gps_accuracy_label)).append(": ")
+                        .append(point.getAccuracy()).append(getString(R.string.distance_meter_unit));
             }
         }
         return builder.toString();
@@ -1050,9 +1057,11 @@ public class MainActivity extends AppCompatActivity {
         routeLine.setWidth(8f);
         tripMapView.getOverlays().add(routeLine);
 
-        addMapMarker(geoPoints.get(0), "Start");
+        addMapMarker(geoPoints.get(0), getString(R.string.map_marker_start));
         if (geoPoints.size() > 1) {
-            addMapMarker(geoPoints.get(geoPoints.size() - 1), trip.isFinished() ? "Finish" : "Last point");
+            addMapMarker(geoPoints.get(geoPoints.size() - 1), trip.isFinished()
+                    ? getString(R.string.map_marker_finish)
+                    : getString(R.string.map_marker_last_point));
         }
 
         if (geoPoints.size() == 1) {
@@ -1095,10 +1104,10 @@ public class MainActivity extends AppCompatActivity {
 
     private String formatDistance(BigDecimal distanceMeters) {
         if (distanceMeters == null) {
-            return "0 m / 0.00 km";
+            return getString(R.string.distance_zero);
         }
         double meters = distanceMeters.doubleValue();
-        return String.format(Locale.US, "%.2f m / %.3f km", meters, meters / 1000.0);
+        return String.format(Locale.US, getString(R.string.distance_format), meters, meters / 1000.0);
     }
 
     private String formatDuration(TripResponse trip) {
@@ -1116,9 +1125,9 @@ public class MainActivity extends AppCompatActivity {
         long minutes = duration.toMinutes() % 60;
         long seconds = duration.getSeconds() % 60;
         if (hours > 0) {
-            return String.format(Locale.US, "%d h %02d min %02d s", hours, minutes, seconds);
+            return String.format(Locale.US, getString(R.string.duration_hours_format), hours, minutes, seconds);
         }
-        return String.format(Locale.US, "%d min %02d s", minutes, seconds);
+        return String.format(Locale.US, getString(R.string.duration_minutes_format), minutes, seconds);
     }
 
     private Instant parseInstant(String value) {
