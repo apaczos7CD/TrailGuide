@@ -23,6 +23,10 @@
     <string name="profile_empty_value">brak danych</string>
     <string name="current_trip_menu_button">Aktualna trasa</string>
     <string name="history_menu_button">Historia tras</string>
+    <string name="theme_mode_title">Motyw aplikacji</string>
+    <string name="theme_mode_system">System</string>
+    <string name="theme_mode_light">Jasny</string>
+    <string name="theme_mode_dark">Ciemny</string>
     <string name="current_trip_title">Aktualna trasa</string>
     <string name="current_trip_empty">Brak aktywnej trasy.</string>
     <string name="gps_status_idle">GPS: nieaktywny.</string>
@@ -56,6 +60,7 @@
     <string name="status_token_storage_init_error">Nie mozna zainicjalizowac bezpiecznego zapisu tokenu: %1$s</string>
     <string name="status_saved_token_found">Znaleziono zapisany token. Sprawdzam /api/users/me...</string>
     <string name="status_notification_permission_denied">Powiadomienia push sa wylaczone, bo nie przyznano zgody systemowej.</string>
+    <string name="status_theme_changed">Motyw aplikacji zostal zmieniony.</string>
     <string name="status_login_in_progress">Logowanie...</string>
     <string name="status_login_error">Blad logowania: %1$s</string>
     <string name="status_username_too_short">Username musi miec co najmniej 3 znaki.</string>

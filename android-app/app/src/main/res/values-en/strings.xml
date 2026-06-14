@@ -23,6 +23,10 @@
     <string name="profile_empty_value">no data</string>
     <string name="current_trip_menu_button">Current trip</string>
     <string name="history_menu_button">Trip history</string>
+    <string name="theme_mode_title">App theme</string>
+    <string name="theme_mode_system">System</string>
+    <string name="theme_mode_light">Light</string>
+    <string name="theme_mode_dark">Dark</string>
     <string name="current_trip_title">Current trip</string>
     <string name="current_trip_empty">No active trip.</string>
     <string name="gps_status_idle">GPS: inactive.</string>
@@ -56,6 +60,7 @@
     <string name="status_token_storage_init_error">Cannot initialize secure token storage: %1$s</string>
     <string name="status_saved_token_found">Saved token found. Checking /api/users/me...</string>
     <string name="status_notification_permission_denied">Push notifications are disabled because system permission was not granted.</string>
+    <string name="status_theme_changed">App theme changed.</string>
     <string name="status_login_in_progress">Logging in...</string>
     <string name="status_login_error">Login error: %1$s</string>
     <string name="status_username_too_short">Username must be at least 3 characters.</string>

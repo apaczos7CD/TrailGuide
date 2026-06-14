@@ -7,6 +7,8 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ApiClient {
     private static final String BASE_URL = "https://10.0.2.2:8443/";
+    // emulator: 10.0.2.2
+    // USB: localhost
 
     private ApiClient() {
     }

@@ -1,6 +1,7 @@
 package pl.trailguide.app;
 
 import android.Manifest;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -65,6 +66,19 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
+    private static final String SETTINGS_PREFS_NAME = "app_settings";
+    private static final String THEME_MODE_KEY = "theme_mode";
+    private static final String ACTIVE_PANEL_KEY = "active_panel";
+    private static final String LAST_TRIP_DETAILS_ID_KEY = "last_trip_details_id";
+    private static final String THEME_MODE_SYSTEM = "system";
+    private static final String THEME_MODE_LIGHT = "light";
+    private static final String THEME_MODE_DARK = "dark";
+    private static final String PANEL_HOME = "home";
+    private static final String PANEL_PROFILE = "profile";
+    private static final String PANEL_CURRENT_TRIP = "current_trip";
+    private static final String PANEL_HISTORY = "history";
+    private static final String PANEL_TRIP_DETAILS = "trip_details";
+
     private TextInputEditText emailInput;
     private TextInputEditText passwordInput;
     private TextInputEditText usernameInput;
@@ -90,6 +104,9 @@ public class MainActivity extends AppCompatActivity {
     private MaterialButton currentTripMenuButton;
     private MaterialButton profileMenuButton;
     private MaterialButton historyMenuButton;
+    private MaterialButton themeSystemButton;
+    private MaterialButton themeLightButton;
+    private MaterialButton themeDarkButton;
     private MaterialButton startTripButton;
     private MaterialButton finishTripButton;
     private MaterialButton refreshCurrentTripButton;
@@ -121,6 +138,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        applySavedThemeMode();
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         Configuration.getInstance().setUserAgentValue(getPackageName());
@@ -149,6 +167,10 @@ public class MainActivity extends AppCompatActivity {
         polishLanguageButton.setOnClickListener(v -> setAppLanguage("pl"));
         englishLanguageButton.setOnClickListener(v -> setAppLanguage("en"));
         updateLanguageSelection();
+        themeSystemButton.setOnClickListener(v -> setAppThemeMode(THEME_MODE_SYSTEM));
+        themeLightButton.setOnClickListener(v -> setAppThemeMode(THEME_MODE_LIGHT));
+        themeDarkButton.setOnClickListener(v -> setAppThemeMode(THEME_MODE_DARK));
+        updateThemeSelection();
         logoutButton.setOnClickListener(v -> logout());
         currentTripMenuButton.setOnClickListener(v -> openCurrentTrip());
         profileMenuButton.setOnClickListener(v -> openProfile());
@@ -219,6 +241,9 @@ public class MainActivity extends AppCompatActivity {
         currentTripMenuButton = findViewById(R.id.currentTripMenuButton);
         profileMenuButton = findViewById(R.id.profileMenuButton);
         historyMenuButton = findViewById(R.id.historyMenuButton);
+        themeSystemButton = findViewById(R.id.themeSystemButton);
+        themeLightButton = findViewById(R.id.themeLightButton);
+        themeDarkButton = findViewById(R.id.themeDarkButton);
         startTripButton = findViewById(R.id.startTripButton);
         finishTripButton = findViewById(R.id.finishTripButton);
         refreshCurrentTripButton = findViewById(R.id.refreshCurrentTripButton);
@@ -286,6 +311,85 @@ public class MainActivity extends AppCompatActivity {
         } else {
             polishLanguageButton.setChecked(true);
         }
+    }
+
+    private void applySavedThemeMode() {
+        AppCompatDelegate.setDefaultNightMode(themeModeForPreference(readThemeModePreference()));
+    }
+
+    private void setAppThemeMode(String themeMode) {
+        saveThemeModePreference(themeMode);
+        updateThemeSelection();
+        AppCompatDelegate.setDefaultNightMode(themeModeForPreference(themeMode));
+        setStatus(getString(R.string.status_theme_changed));
+    }
+
+    private void updateThemeSelection() {
+        String themeMode = readThemeModePreference();
+        themeSystemButton.setChecked(THEME_MODE_SYSTEM.equals(themeMode));
+        themeLightButton.setChecked(THEME_MODE_LIGHT.equals(themeMode));
+        themeDarkButton.setChecked(THEME_MODE_DARK.equals(themeMode));
+    }
+
+    private int themeModeForPreference(String themeMode) {
+        if (THEME_MODE_LIGHT.equals(themeMode)) {
+            return AppCompatDelegate.MODE_NIGHT_NO;
+        }
+        if (THEME_MODE_DARK.equals(themeMode)) {
+            return AppCompatDelegate.MODE_NIGHT_YES;
+        }
+        return AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM;
+    }
+
+    private String readThemeModePreference() {
+        return getSettingsPreferences().getString(THEME_MODE_KEY, THEME_MODE_SYSTEM);
+    }
+
+    private void saveThemeModePreference(String themeMode) {
+        getSettingsPreferences().edit().putString(THEME_MODE_KEY, themeMode).apply();
+    }
+
+    private SharedPreferences getSettingsPreferences() {
+        return getSharedPreferences(SETTINGS_PREFS_NAME, MODE_PRIVATE);
+    }
+
+    private void restoreLastPanelAfterLogin() {
+        String panel = getSettingsPreferences().getString(ACTIVE_PANEL_KEY, PANEL_HOME);
+        if (PANEL_PROFILE.equals(panel)) {
+            openProfile();
+            return;
+        }
+        if (PANEL_CURRENT_TRIP.equals(panel)) {
+            openCurrentTrip();
+            return;
+        }
+        if (PANEL_HISTORY.equals(panel)) {
+            openHistory();
+            return;
+        }
+        if (PANEL_TRIP_DETAILS.equals(panel)) {
+            long tripId = getSettingsPreferences().getLong(LAST_TRIP_DETAILS_ID_KEY, -1L);
+            if (tripId > 0) {
+                openTripDetails(tripId);
+                return;
+            }
+        }
+        showHomePanel();
+    }
+
+    private void rememberPanel(String panel) {
+        getSettingsPreferences().edit().putString(ACTIVE_PANEL_KEY, panel).apply();
+    }
+
+    private void rememberTripDetailsId(long tripId) {
+        getSettingsPreferences().edit().putLong(LAST_TRIP_DETAILS_ID_KEY, tripId).apply();
+    }
+
+    private void clearRememberedPanel() {
+        getSettingsPreferences().edit()
+                .remove(ACTIVE_PANEL_KEY)
+                .remove(LAST_TRIP_DETAILS_ID_KEY)
+                .apply();
     }
 
     private void login() {
@@ -391,7 +495,7 @@ public class MainActivity extends AppCompatActivity {
                 currentUser = user;
                 userSummaryText.setText(getString(R.string.user_summary_format,
                         user.getUsername(), user.getEmail(), user.getRole(), user.getId()));
-                showHomePanel();
+                restoreLastPanelAfterLogin();
                 setStatus(getString(R.string.status_logged_in_as, user.getUsername()));
                 registerFcmToken();
                 refreshActiveTripState();
@@ -424,6 +528,7 @@ public class MainActivity extends AppCompatActivity {
         historyTripsList.removeAllViews();
         tripDetailsText.setText(R.string.trip_details_loading);
         clearTripMap();
+        clearRememberedPanel();
         showAuthForm();
         setAuthDone(getString(R.string.status_logged_out));
     }
@@ -699,6 +804,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void openTripDetails(long tripId) {
+        rememberTripDetailsId(tripId);
         showTripDetailsPanel();
         tripDetailsText.setText(R.string.trip_details_loading);
         clearTripMap();
@@ -794,6 +900,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showHomePanel() {
+        rememberPanel(PANEL_HOME);
         authPanel.setVisibility(View.GONE);
         homePanel.setVisibility(View.VISIBLE);
         profilePanel.setVisibility(View.GONE);
@@ -804,6 +911,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showProfilePanel() {
+        rememberPanel(PANEL_PROFILE);
         authPanel.setVisibility(View.GONE);
         homePanel.setVisibility(View.GONE);
         profilePanel.setVisibility(View.VISIBLE);
@@ -814,6 +922,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showCurrentTripPanel() {
+        rememberPanel(PANEL_CURRENT_TRIP);
         authPanel.setVisibility(View.GONE);
         homePanel.setVisibility(View.GONE);
         profilePanel.setVisibility(View.GONE);
@@ -824,6 +933,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showHistoryPanel() {
+        rememberPanel(PANEL_HISTORY);
         authPanel.setVisibility(View.GONE);
         homePanel.setVisibility(View.GONE);
         profilePanel.setVisibility(View.GONE);
@@ -834,6 +944,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showTripDetailsPanel() {
+        rememberPanel(PANEL_TRIP_DETAILS);
         authPanel.setVisibility(View.GONE);
         homePanel.setVisibility(View.GONE);
         profilePanel.setVisibility(View.GONE);

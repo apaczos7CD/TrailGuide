@@ -19,10 +19,11 @@
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/appToolbar"
-            android:layout_width="0dp"
-            android:layout_height="?attr/actionBarSize"
+            android:layout_width="193dp"
+            android:layout_height="42dp"
             android:background="?attr/colorSurface"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:title="@string/app_name"
@@ -83,19 +84,69 @@
                 android:text="@string/language_english" />
         </com.google.android.material.button.MaterialButtonToggleGroup>
 
+        <TextView
+            android:id="@+id/themeModeTitleText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/theme_mode_title"
+            android:textAppearance="?attr/textAppearanceTitleSmall"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/languageRow" />
+
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/themeModeLayout"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/themeModeTitleText"
+            app:selectionRequired="true"
+            app:singleSelection="true">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/themeSystemButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:text="@string/theme_mode_system" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/themeLightButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:text="@string/theme_mode_light" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/themeDarkButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:text="@string/theme_mode_dark" />
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+
         <LinearLayout
             android:id="@+id/authPanel"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="28dp"
             android:orientation="vertical"
+            android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/languageRow">
+            app:layout_constraintTop_toBottomOf="@id/themeModeLayout">
 
             <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                 android:id="@+id/emailLayout"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="@string/email_hint">
@@ -110,8 +161,8 @@
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                 android:id="@+id/passwordLayout"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
@@ -128,8 +179,8 @@
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                 android:id="@+id/usernameLayout"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
@@ -176,10 +227,10 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="28dp"
             android:orientation="vertical"
-            android:visibility="gone"
+            android:visibility="visible"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/languageRow">
+            app:layout_constraintTop_toBottomOf="@id/themeModeLayout">
 
             <TextView
                 android:id="@+id/userTitleText"
@@ -246,7 +297,7 @@
             android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/languageRow">
+            app:layout_constraintTop_toBottomOf="@id/themeModeLayout">
 
             <TextView
                 android:id="@+id/profileTitleText"
@@ -372,7 +423,7 @@
             android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/languageRow">
+            app:layout_constraintTop_toBottomOf="@id/themeModeLayout">
 
             <TextView
                 android:layout_width="match_parent"
@@ -494,7 +545,7 @@
             android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/languageRow">
+            app:layout_constraintTop_toBottomOf="@id/themeModeLayout">
 
             <TextView
                 android:layout_width="match_parent"
@@ -555,7 +606,7 @@
             android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/languageRow">
+            app:layout_constraintTop_toBottomOf="@id/themeModeLayout">
 
             <TextView
                 android:id="@+id/tripDetailsTitleText"
